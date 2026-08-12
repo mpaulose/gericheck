@@ -1,34 +1,15 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-<title>Geri-Check — Daily checks made simple</title>
-<meta name="description" content="Geri-Check helps older adults and caregivers track hydration and symptoms, spot Medicare scams, and prepare for doctor visits."/>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9D%A4%EF%B8%8F</text></svg>"/>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef } = React;
-
-/* ------------------------------------------------------------------ */
-/*  ICON SET — small hand-drawn line icons (no external package),      */
-/*  so this file has zero build step and zero npm dependencies.        */
-/* ------------------------------------------------------------------ */
-function Ic({ size = 24, color = "currentColor", strokeWidth = 2, className = "", style = {}, fill = "none", children }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color}
-      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
-      className={className} style={style}>
-      {children}
-    </svg>
-  );
-}
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Geri-Check — Daily checks made simple</title>
+    <meta name="description" content="Geri-Check helps older adults and caregivers track hydration and symptoms, spot Medicare scams, and prepare for doctor visits." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>" />
+  </head>
+  <body class="bg-gray-50 text-gray-900">
+    <div id="root"></div>
+    <!-- Vite handles this entry point natively -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

@@ -1,0 +1,1182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>Geri-Check — Daily checks made simple</title>
+<meta name="description" content="Geri-Check helps older adults and caregivers track hydration and symptoms, spot Medicare scams, and prepare for doctor visits."/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9D%A4%EF%B8%8F</text></svg>"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+/* ------------------------------------------------------------------ */
+/*  ICON SET — small hand-drawn line icons (no external package),      */
+/*  so this file has zero build step and zero npm dependencies.        */
+/* ------------------------------------------------------------------ */
+function Ic({ size = 24, color = "currentColor", strokeWidth = 2, className = "", style = {}, fill = "none", children }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color}
+      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+      className={className} style={style}>
+      {children}
+    </svg>
+  );
+}
+const Droplets = (p) => <Ic {...p}><path d="M12 2.5c3.6 5.2 6.5 9 6.5 12.3a6.5 6.5 0 0 1-13 0c0-3.3 2.9-7.1 6.5-12.3z" /></Ic>;
+const Droplet = Droplets;
+const ShieldCheck = (p) => <Ic {...p}><path d="M12 3l7 3.2v5.3c0 5-3 8.6-7 9.5-4-.9-7-4.5-7-9.5V6.2L12 3z" /><path d="M9 12l2 2 4-4.5" /></Ic>;
+const ClipboardList = (p) => <Ic {...p}><rect x="5.5" y="4" width="13" height="17" rx="2" /><rect x="9" y="2" width="6" height="4" rx="1" /><line x1="8.5" y1="10.5" x2="15.5" y2="10.5" /><line x1="8.5" y1="14" x2="15.5" y2="14" /><line x1="8.5" y1="17.5" x2="13" y2="17.5" /></Ic>;
+const Home = (p) => <Ic {...p}><path d="M4 11.5L12 4l8 7.5" /><path d="M6 10v10h12V10" /></Ic>;
+const HomeIcon = Home;
+const ArrowLeft = (p) => <Ic {...p}><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></Ic>;
+const Phone = (p) => <Ic {...p}><path d="M5 4.5c.3 5 3 12 9.5 15.5 1 .5 2 .5 2.5-.5l1.5-3-4-2-1 1.5c-2-1-3.5-2.5-4.5-4.5l1.5-1-2-4-3 .5c-.5.5-.5 1.5 0 2.5" /></Ic>;
+const PhoneCall = (p) => <Ic {...p}><path d="M5 4.5c.3 5 3 12 9.5 15.5 1 .5 2 .5 2.5-.5l1.5-3-4-2-1 1.5c-2-1-3.5-2.5-4.5-4.5l1.5-1-2-4-3 .5c-.5.5-.5 1.5 0 2.5" /><path d="M15 3.5c1.8.3 3.2 1.7 3.5 3.5" /><path d="M15 1c3 .3 5.7 3 6 6" /></Ic>;
+const Package = (p) => <Ic {...p}><path d="M21 8.3L12 3.5 3 8.3 12 13l9-4.7z" /><path d="M3 8.3v8L12 21l9-4.7v-8" /><line x1="12" y1="13" x2="12" y2="21" /></Ic>;
+const Lock = (p) => <Ic {...p}><rect x="5" y="11" width="14" height="9.5" rx="2" /><path d="M7.5 11V7.5a4.5 4.5 0 0 1 9 0V11" /></Ic>;
+const Pill = (p) => <Ic {...p}><rect x="3.5" y="9" width="17" height="6" rx="3" /><line x1="12" y1="9" x2="12" y2="15" /></Ic>;
+const FileText = (p) => <Ic {...p}><path d="M6.5 2.5h8l4 4v14.5h-12z" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="15" y2="17" /></Ic>;
+const HelpCircle = (p) => <Ic {...p}><circle cx="12" cy="12" r="9.5" /><path d="M9.3 9.3a2.7 2.7 0 0 1 5.2 1c0 2-2.5 2-2.5 4" /><line x1="12" y1="17" x2="12" y2="17.1" /></Ic>;
+const Printer = (p) => <Ic {...p}><rect x="6" y="8.5" width="12" height="7" /><path d="M6.5 8.5V4h11v4.5" /><rect x="8" y="14.5" width="8" height="6" /></Ic>;
+const Check = (p) => <Ic {...p}><polyline points="5 13 9.5 17.5 19 7" /></Ic>;
+const X = (p) => <Ic {...p}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></Ic>;
+const AlertTriangle = (p) => <Ic {...p}><path d="M12 3.5L2.5 20h19L12 3.5z" /><line x1="12" y1="9.5" x2="12" y2="14" /><line x1="12" y1="17" x2="12" y2="17.1" /></Ic>;
+const Info = (p) => <Ic {...p}><circle cx="12" cy="12" r="9.5" /><line x1="12" y1="11" x2="12" y2="16.5" /><line x1="12" y1="7.8" x2="12" y2="7.9" /></Ic>;
+const Heart = (p) => <Ic {...p}><path d="M12 20.5s-7.5-4.6-9.8-9C.6 8 3 4.2 7 4.2c2 0 3.7 1 5 3 1.3-2 3-3 5-3 4 0 6.4 3.8 4.8 7.3-2.3 4.4-9.8 9-9.8 9z" /></Ic>;
+const Users = (p) => <Ic {...p}><circle cx="9" cy="8" r="3.2" /><path d="M2.7 20c.4-3.2 3-5.5 6.3-5.5s5.9 2.3 6.3 5.5" /><circle cx="17.5" cy="8.5" r="2.4" /><path d="M15.3 14.8c2.4.3 4.3 2.2 4.7 4.7" /></Ic>;
+const ChevronRight = (p) => <Ic {...p}><polyline points="9 5 16 12 9 19" /></Ic>;
+const ChevronDown = (p) => <Ic {...p}><polyline points="5 8 12 15.5 19 8" /></Ic>;
+const Snowflake = (p) => <Ic {...p}><line x1="12" y1="2.5" x2="12" y2="21.5" /><line x1="2.5" y1="12" x2="21.5" y2="12" /><line x1="5.5" y1="5.5" x2="18.5" y2="18.5" /><line x1="18.5" y1="5.5" x2="5.5" y2="18.5" /></Ic>;
+const Brain = (p) => <Ic {...p}><path d="M9 4.5a3 3 0 0 0-3 3 3 3 0 0 0-1.5 5.4A3.2 3.2 0 0 0 6 18.8a3 3 0 0 0 5.5.7c.3.1.6.2 1 .2V4.7c-.4-.2-.9-.3-1.5-.3-.7 0-1.4.2-2 .5V4.5z" /><path d="M15 4.5a3 3 0 0 1 3 3 3 3 0 0 1 1.5 5.4A3.2 3.2 0 0 1 18 18.8a3 3 0 0 1-5.5.7" /></Ic>;
+const Moon = (p) => <Ic {...p}><path d="M20.5 13.8A8.5 8.5 0 1 1 10.2 3.5a7 7 0 0 0 10.3 10.3z" /></Ic>;
+const Zap = (p) => <Ic {...p} fill={p.fill || "none"}><polygon points="13 2.5 4 14 11 14 10 21.5 20 10 13 10 13 2.5" /></Ic>;
+const CheckCircle2 = (p) => <Ic {...p}><circle cx="12" cy="12" r="9.5" /><polyline points="8 12.3 11 15.3 16 9" /></Ic>;
+const Flame = (p) => <Ic {...p}><path d="M12 2.5c1.7 3.4-2 4.6-2 8a2 2 0 0 0 4 0c0-1.3-.7-2-.7-2 1.7.8 2.7 2.6 2.7 4.5a5 5 0 1 1-10 0c0-4.3 3.3-6 6-10.5z" /></Ic>;
+const Gauge = (p) => <Ic {...p}><circle cx="12" cy="12" r="9" /><line x1="12" y1="12" x2="16.5" y2="8" /><line x1="6" y1="16.5" x2="6" y2="16.6" /></Ic>;
+const Volume2 = (p) => <Ic {...p}><polygon points="3.5 9 8 9 12.5 4.5 12.5 19.5 8 15 3.5 15" /><path d="M16 8.3a5 5 0 0 1 0 7.4" /><path d="M18.6 5.5a9 9 0 0 1 0 13" /></Ic>;
+const Plus = (p) => <Ic {...p}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Ic>;
+const Minus = (p) => <Ic {...p}><line x1="5" y1="12" x2="19" y2="12" /></Ic>;
+const Send = (p) => <Ic {...p}><polygon points="21.5 2.5 14.5 21.5 11 13 2.5 9.5" /><line x1="21.5" y1="2.5" x2="11" y2="13" /></Ic>;
+const CreditCard = (p) => <Ic {...p}><rect x="2.5" y="5.5" width="19" height="13" rx="2" /><line x1="2.5" y1="10" x2="21.5" y2="10" /></Ic>;
+const Mic = (p) => <Ic {...p}><rect x="9" y="2.5" width="6" height="11" rx="3" /><path d="M5.5 10.5a6.5 6.5 0 0 0 13 0" /><line x1="12" y1="17" x2="12" y2="21.5" /><line x1="8.3" y1="21.5" x2="15.7" y2="21.5" /></Ic>;
+const Copy = (p) => <Ic {...p}><rect x="9" y="9" width="12.5" height="12.5" rx="2" /><rect x="2.5" y="2.5" width="12.5" height="12.5" rx="2" /></Ic>;
+
+
+
+/* ------------------------------------------------------------------ */
+/*  DESIGN TOKENS                                                      */
+/* ------------------------------------------------------------------ */
+const COLOR = {
+  cream: "#F8F6F0",
+  creamDeep: "#EDE7D9",
+  navy: "#1B365D",
+  navyDeep: "#122540",
+  rose: "#E8637A",
+  roseDeep: "#D14C63",
+  blue: "#2B78E4",
+  blueDeep: "#1D5CBB",
+  sage: "#1E7E51",
+  sageDeep: "#155F3C",
+  gold: "#E67E22",
+  goldDeep: "#C4661A",
+  brick: "#D9383A",
+  brickDeep: "#B32B2D",
+  ink: "#241E1A",
+};
+
+const FONT_IMPORT =
+  "@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=Nunito:wght@500;600;700;800;900&display=swap');";
+
+const display = { fontFamily: "'Fraunces', serif" };
+const body = { fontFamily: "'Nunito', sans-serif" };
+const SMP_TEL = "18778082468";
+const SMP_DISPLAY = "1-877-808-2468";
+
+/* ------------------------------------------------------------------ */
+/*  TEXT-TO-SPEECH                                                     */
+/* ------------------------------------------------------------------ */
+function speak(text) {
+  try {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  } catch (e) {
+    /* speech not available on this device — button just won't speak */
+  }
+}
+
+function SpeakerButton({ text, big }) {
+  return (
+    <button
+      onClick={() => speak(text)}
+      aria-label="Read this aloud"
+      className={`rounded-full flex items-center justify-center shrink-0 active:scale-90 transition ${big ? "w-11 h-11" : "w-9 h-9"}`}
+      style={{ background: big ? COLOR.navy : `${COLOR.navy}14` }}
+    >
+      <Volume2 size={big ? 22 : 18} color={big ? "#fff" : COLOR.navy} />
+    </button>
+  );
+}
+
+/* A full-width "listen to this section" bar, used at the top of every page */
+function ListenBar({ text }) {
+  return (
+    <button
+      onClick={() => speak(text)}
+      className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 active:scale-[0.98] transition"
+      style={{ background: "rgba(255,255,255,0.15)" }}
+    >
+      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,0.25)" }}>
+        <Volume2 size={20} color="#fff" />
+      </div>
+      <span className="text-white text-base font-extrabold" style={body}>Tap to hear what this page does</span>
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  VISITOR COUNTER — decorative animated count-up (no real backend)   */
+/* ------------------------------------------------------------------ */
+function useCountUp(target, duration = 1400) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let start = null;
+    let raf;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.floor(eased * target));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
+/* ------------------------------------------------------------------ */
+/*  PRINT + SHARE HELPERS                                              */
+/* ------------------------------------------------------------------ */
+function openPrintable(title, innerHtml, onFail) {
+  try {
+    const w = window.open("", "_blank");
+    if (!w) { onFail("popup"); return; }
+    w.document.write(
+      `<html><head><title>${title}</title><meta charset="utf-8"/>
+       <style>
+         body{font-family:Georgia,'Times New Roman',serif;padding:36px;color:#111;max-width:700px;margin:0 auto;}
+         h1{font-family:Georgia,serif;font-size:28px;margin-bottom:4px;}
+         .sub{font-size:16px;color:#555;margin-bottom:24px;}
+         h2{font-size:20px;margin-top:26px;margin-bottom:8px;}
+         p,li{font-size:17px;line-height:1.6;}
+         .line{border-bottom:2px solid #bbb;height:34px;margin-bottom:6px;}
+       </style></head><body>${innerHtml}
+       <script>window.onload=function(){setTimeout(function(){window.print();},250);}<\/script>
+       </body></html>`
+    );
+    w.document.close();
+    w.focus();
+  } catch (e) {
+    onFail("error");
+  }
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  SHARED UI                                                          */
+/* ------------------------------------------------------------------ */
+function Brand({ dark }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Heart size={20} color={COLOR.rose} fill={COLOR.rose} />
+      <span className="text-lg font-extrabold tracking-wide" style={{ ...display, fontWeight: 700, color: dark ? COLOR.ink : "#fff" }}>
+        Geri-Check
+      </span>
+    </div>
+  );
+}
+
+function TopBar({ title, subtitle, onBack, dateLine, listenText }) {
+  return (
+    <div className="px-6 pt-8 pb-6 rounded-b-[2rem]" style={{ background: COLOR.navy }}>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              aria-label="Go back"
+              className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center active:scale-95 transition"
+              style={{ background: "rgba(255,255,255,0.15)" }}
+            >
+              <ArrowLeft size={26} color="#fff" strokeWidth={2.6} />
+            </button>
+          )}
+          <Brand />
+        </div>
+      </div>
+      {dateLine && (
+        <p className="text-white/70 text-base font-bold mt-3" style={body}>{dateLine}</p>
+      )}
+      <h1 className="text-white text-3xl leading-tight mt-1" style={{ ...display, fontWeight: 700 }}>{title}</h1>
+      {subtitle && <p className="text-white/80 text-lg mt-1 mb-3" style={body}>{subtitle}</p>}
+      {listenText && (
+        <div className="mt-2">
+          <ListenBar text={listenText} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BottomNav({ screen, go }) {
+  const items = [
+    { key: "home", label: "Home", Icon: Home },
+    { key: "hydration", label: "Water", Icon: Droplets },
+    { key: "scam", label: "Shield", Icon: ShieldCheck },
+    { key: "doctor", label: "Doctor", Icon: ClipboardList },
+  ];
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0 px-3 pb-3 pt-2 flex justify-around"
+      style={{ background: "#fff", borderTop: `2px solid ${COLOR.creamDeep}`, boxShadow: "0 -6px 20px rgba(27,54,93,0.1)" }}
+    >
+      {items.map(({ key, label, Icon }) => {
+        const active = screen === key;
+        return (
+          <button
+            key={key}
+            onClick={() => go(key)}
+            className="flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition active:scale-95"
+            style={{ background: active ? COLOR.navy : "transparent", minWidth: 68 }}
+          >
+            <Icon size={26} color={active ? "#fff" : COLOR.navy} strokeWidth={active ? 2.4 : 2} />
+            <span className="text-xs font-extrabold" style={{ ...body, color: active ? "#fff" : COLOR.navy }}>{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ReturnHomeButton({ go }) {
+  return (
+    <div className="px-6 mt-8">
+      <button
+        onClick={() => go("home")}
+        className="w-full rounded-3xl py-4 text-lg font-extrabold flex items-center justify-center gap-2 active:scale-95 transition"
+        style={{ ...body, background: COLOR.creamDeep, color: COLOR.navy, border: `2px solid ${COLOR.navy}33` }}
+      >
+        <HomeIcon size={22} /> Return to Home
+      </button>
+    </div>
+  );
+}
+
+function BigCard({ Icon, iconBg, title, blurb, onClick, accent, listenText }) {
+  return (
+    <div
+      className="w-full rounded-[2rem] p-5 flex items-center gap-4 shadow-lg"
+      style={{ background: "#fff", border: `3px solid ${accent}` }}
+    >
+      <button onClick={onClick} className="flex items-center gap-5 flex-1 text-left active:scale-[0.98] transition">
+        <div className="w-20 h-20 shrink-0 rounded-3xl flex items-center justify-center" style={{ background: iconBg }}>
+          <Icon size={40} color="#fff" strokeWidth={2.2} />
+        </div>
+        <div className="flex-1">
+          <div className="text-2xl" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>{title}</div>
+          <div className="text-base mt-0.5" style={{ ...body, color: "#6B6259" }}>{blurb}</div>
+        </div>
+      </button>
+      <div className="flex flex-col items-center gap-2 shrink-0">
+        <SpeakerButton text={listenText} />
+        <button onClick={onClick} aria-label={`Open ${title}`}>
+          <ChevronRight size={26} color={accent} strokeWidth={2.5} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SignCard({ active, Icon, label, advice, onToggle, accent }) {
+  return (
+    <div
+      className="relative rounded-3xl p-4 transition"
+      style={{
+        background: active ? accent : "#fff",
+        border: `3px solid ${accent}`,
+        boxShadow: active ? "0 8px 18px rgba(0,0,0,0.12)" : "0 4px 10px rgba(0,0,0,0.05)",
+      }}
+    >
+      {/* Speaker is pinned to the corner so it never moves when the
+          card's content changes width (e.g. the checkmark appearing). */}
+      <div className="absolute top-3 right-3">
+        <SpeakerButton text={`${label}. ${advice} Tap the card to ${active ? "un-select" : "select"} it.`} />
+      </div>
+      <button onClick={onToggle} className="w-full text-left active:scale-[0.97] transition pr-10">
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center" style={{ background: active ? "rgba(255,255,255,0.25)" : `${accent}22` }}>
+            <Icon size={28} color={active ? "#fff" : accent} strokeWidth={2.3} />
+          </div>
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <div className="text-lg leading-tight" style={{ ...body, fontWeight: 800, color: active ? "#fff" : COLOR.ink }}>{label}</div>
+            {active && <CheckCircle2 size={20} color="#fff" strokeWidth={2.5} className="shrink-0" />}
+          </div>
+        </div>
+      </button>
+      {active && (
+        <p className="text-sm mt-3 leading-snug pr-8" style={{ ...body, fontWeight: 600, color: "#fff" }}>{advice}</p>
+      )}
+    </div>
+  );
+}
+
+function ExpandableTip({ Icon, question, answer, open, onToggle, accent }) {
+  return (
+    <div className="rounded-3xl bg-white shadow-md overflow-hidden" style={{ border: `2px solid ${accent}33` }}>
+      <div className="w-full flex items-center gap-3 p-4">
+        <button onClick={onToggle} className="flex items-center gap-3 flex-1 text-left active:scale-[0.99] transition">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${accent}18` }}>
+            <Icon size={24} color={accent} />
+          </div>
+          <span className="text-base flex-1" style={{ ...body, fontWeight: 800, color: COLOR.ink }}>{question}</span>
+          <ChevronDown size={22} color={accent} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+        </button>
+        <SpeakerButton text={`${question} ${answer}`} />
+      </div>
+      {open && <p className="px-4 pb-4 text-base leading-snug" style={{ ...body, fontWeight: 600, color: "#5C5449" }}>{answer}</p>}
+    </div>
+  );
+}
+
+function ReadinessRing({ fraction, color }) {
+  const r = 46, c = 2 * Math.PI * 46;
+  return (
+    <svg width="110" height="110" viewBox="0 0 110 110">
+      <circle cx="55" cy="55" r={r} fill="none" stroke={`${color}22`} strokeWidth="12" />
+      <circle cx="55" cy="55" r={r} fill="none" stroke={color} strokeWidth="12" strokeDasharray={c} strokeDashoffset={c - fraction * c} strokeLinecap="round" transform="rotate(-90 55 55)" />
+      <text x="55" y="62" textAnchor="middle" fontSize="26" fontWeight="800" fill={color} style={body}>{Math.round(fraction * 3)}/3</text>
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  HOME SCREEN                                                         */
+/* ------------------------------------------------------------------ */
+function QuickContactsModal({ contacts, setContacts, onClose }) {
+  const rows = [
+    { key: "family", label: "Family", Icon: Users, editable: true, listen: "Family. Type in a phone number, then tap the green button to call." },
+    { key: "doctor", label: "Doctor's Office", Icon: ClipboardList, editable: true, listen: "Doctor's office. Type in a phone number, then tap the green button to call." },
+    { key: "smp", label: "Senior Medicare Patrol", Icon: ShieldCheck, editable: false, number: SMP_TEL, display: SMP_DISPLAY, listen: `Senior Medicare Patrol. Tap the green button to call ${SMP_DISPLAY}.` },
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.5)" }}>
+      <div className="w-full bg-white rounded-t-[2rem] p-6 max-h-[85vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-2xl" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>Quick Contacts</h3>
+          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: COLOR.creamDeep }}>
+            <X size={22} color={COLOR.ink} />
+          </button>
+        </div>
+        <div className="flex flex-col gap-3">
+          {rows.map((r) => (
+            <div key={r.key} className="rounded-3xl p-4" style={{ background: COLOR.cream, border: `2px solid ${COLOR.navy}18` }}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: `${COLOR.navy}14` }}>
+                  <r.Icon size={22} color={COLOR.navy} />
+                </div>
+                <span className="text-lg font-extrabold flex-1" style={{ ...body, color: COLOR.ink }}>{r.label}</span>
+                <SpeakerButton text={r.listen} />
+              </div>
+              {r.editable ? (
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    placeholder="Add phone number"
+                    value={contacts[r.key] || ""}
+                    onChange={(e) => setContacts((c) => ({ ...c, [r.key]: e.target.value }))}
+                    className="flex-1 rounded-xl px-3 py-3 text-lg"
+                    style={{ ...body, border: `2px solid ${COLOR.navy}33` }}
+                  />
+                  {contacts[r.key] && (
+                    <a href={`tel:${contacts[r.key].replace(/[^0-9+]/g, "")}`} className="w-14 rounded-xl flex items-center justify-center" style={{ background: COLOR.sage }}>
+                      <Phone size={22} color="#fff" />
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <a href={`tel:${r.number}`} className="w-full rounded-xl py-3 flex items-center justify-center gap-2 text-lg font-extrabold" style={{ background: COLOR.sage, color: "#fff", ...body }}>
+                  <Phone size={20} /> {r.display}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="text-sm text-center mt-4" style={{ ...body, color: "#8A8072" }}>
+          On a phone, the call button dials right away. In some previews it may only be able to show the number.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ go, contacts, setContacts }) {
+  const count = useCountUp(12483);
+  const [showContacts, setShowContacts] = useState(false);
+  const dateStr = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+  const cards = [
+    { key: "hydration", Icon: Droplets, iconBg: COLOR.blue, accent: COLOR.blue, title: "Water & Symptoms", blurb: "Check your hydration and how you're feeling", listen: "Water and Symptoms. Tap this card to check your hydration color and note any symptoms like dizziness or bathroom discomfort." },
+    { key: "scam", Icon: ShieldCheck, iconBg: COLOR.brick, accent: COLOR.brick, title: "Scam Checker", blurb: "Make sure a call or offer is safe", listen: "Scam Checker. Tap this card to answer three quick yes or no questions about a call or offer you received." },
+    { key: "doctor", Icon: ClipboardList, iconBg: COLOR.sageDeep, accent: COLOR.sageDeep, title: "Doctor Prep", blurb: "Get ready for your next appointment", listen: "Doctor Prep. Tap this card to build a checklist and summary to bring to your next doctor's visit." },
+  ];
+
+  return (
+    <div className="pb-28">
+      <TopBar
+        title="Good to see you"
+        subtitle="What would you like to check today?"
+        dateLine={dateStr}
+        listenText="Welcome to Geri-Check. This is your home screen. Tap Quick Call near the top to phone family, your doctor, or Senior Medicare Patrol. Below that are three big buttons: Water and Symptoms, Scam Checker, and Doctor Prep. Tap any of them to get started."
+      />
+
+      <div className="px-6 -mt-3">
+        <button
+          onClick={() => setShowContacts(true)}
+          className="w-full rounded-3xl px-5 py-4 flex items-center gap-4 shadow-lg active:scale-[0.98] transition mb-3"
+          style={{ background: `linear-gradient(135deg, ${COLOR.brick}, ${COLOR.brickDeep})` }}
+        >
+          <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+            <Phone size={26} color="#fff" strokeWidth={2.3} />
+          </div>
+          <div className="text-left flex-1">
+            <div className="text-white text-lg" style={{ ...body, fontWeight: 800 }}>Quick Call</div>
+            <div className="text-white/90 text-sm font-bold" style={body}>Family, Doctor, or Medicare Patrol</div>
+          </div>
+          <ChevronRight size={24} color="#fff" />
+        </button>
+
+        <div className="rounded-3xl px-5 py-4 flex items-center gap-4 shadow-lg" style={{ background: `linear-gradient(135deg, ${COLOR.rose}, ${COLOR.roseDeep})` }}>
+          <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+            <Users size={28} color="#fff" strokeWidth={2.3} />
+          </div>
+          <div>
+            <div className="text-white text-3xl" style={{ ...display, fontWeight: 800 }}>{count.toLocaleString()}+</div>
+            <div className="text-white/90 text-sm font-bold" style={body}>families and caregivers supported so far</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-6 mt-6 flex flex-col gap-5">
+        {cards.map((c) => (
+          <BigCard key={c.key} Icon={c.Icon} iconBg={c.iconBg} accent={c.accent} title={c.title} blurb={c.blurb} listenText={c.listen} onClick={() => go(c.key)} />
+        ))}
+      </div>
+
+      <div className="px-6 mt-8">
+        <div className="rounded-3xl p-5 text-center" style={{ background: COLOR.creamDeep }}>
+          <p className="text-base leading-snug" style={{ ...body, fontWeight: 700, color: "#6B6259" }}>
+            Geri-Check gives general, friendly reminders. It is not a doctor. Anything you type or select stays on this screen only, for this session.
+          </p>
+        </div>
+      </div>
+
+      {showContacts && <QuickContactsModal contacts={contacts} setContacts={setContacts} onClose={() => setShowContacts(false)} />}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  HYDRATION & SYMPTOM SCREEN                                          */
+/* ------------------------------------------------------------------ */
+const URINE_COLORS = [
+  { label: "Pale Straw", hex: "#F5EFC0", status: "Great Hydration", statusColor: COLOR.sageDeep, emoji: "😊", tag: "Great", text: "Your urine color looks healthy and well-hydrated. Keep up your regular water intake!" },
+  { label: "Bright Yellow", hex: "#F2DE6E", status: "Normal", statusColor: COLOR.sageDeep, emoji: "🙂", tag: "Normal", text: "Normal hydration level. No extra action needed." },
+  { label: "Dark Amber", hex: "#E0A93B", status: "Mild Dehydration", statusColor: COLOR.goldDeep, emoji: "🚰", tag: "Drink Water", text: "You may be dehydrated. Drink 1–2 full glasses of water over the next hour and re-check later." },
+  { label: "Brownish Tea", hex: "#9C6B33", status: "Severe Dehydration Signal", statusColor: COLOR.brickDeep, emoji: "⚠️", tag: "Act Now", text: "Warning: dark brown urine can point to severe dehydration or a medication effect. Drink water right away. If it stays dark, call your doctor." },
+  { label: "Pink / Red Tint", hex: "#E38C9B", status: "Possible Blood — Alert", statusColor: COLOR.brickDeep, emoji: "🚨", tag: "Call Doctor", text: "Alert: a red or pink tint may mean blood in the urine, a strong infection sign. Show this to a doctor or caregiver today." },
+];
+
+const SYMPTOMS = [
+  { key: "dizzy", label: "Feeling Dizzy", Icon: Zap, advice: "Sit down right away and sip water slowly." },
+  { key: "confused", label: "Sudden Confusion", Icon: Brain, advice: "Ask someone to stay with you and check in on how you feel." },
+  { key: "cold", label: "Cold / Shivering", Icon: Snowflake, advice: "Wrap up warm and let a family member know." },
+  { key: "tired", label: "Unusual Fatigue", Icon: Moon, advice: "Rest and drink a glass of water; watch if it continues." },
+];
+
+const BATHROOM_SIGNS = [
+  { key: "burn", label: "Burning Feeling", Icon: Flame, advice: "Burning during urination is a common bladder infection sign. Drink water now and contact your doctor if it continues." },
+  { key: "pressure", label: "Pelvic Pressure", Icon: Gauge, advice: "Lower stomach pressure can happen with bladder irritation. Mention this to your physician." },
+  { key: "urgency", label: "Sudden Urgency", Icon: AlertTriangle, advice: "Feeling like you can't hold it is a frequent infection sign. Track how often this happens today." },
+  { key: "drops", label: "Only a Few Drops", Icon: Droplet, advice: "Urge to go but very little comes out is a classic infection symptom." },
+];
+
+function CupTracker({ cups, setCups }) {
+  const max = 8;
+  return (
+    <div className="rounded-3xl p-4 bg-white shadow-md mb-6" style={{ border: `3px solid ${COLOR.blue}33` }}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-lg font-extrabold" style={{ ...body, color: COLOR.ink }}>💧 {cups} Cups Today</span>
+        <div className="flex items-center gap-2">
+          <SpeakerButton text={`You have logged ${cups} cups of water today. Tap the minus button to remove one, or the plus button to add one.`} />
+          <button onClick={() => setCups((c) => Math.max(0, c - 1))} className="w-11 h-11 rounded-2xl flex items-center justify-center active:scale-90 transition" style={{ background: `${COLOR.blue}18` }}>
+            <Minus size={22} color={COLOR.blue} />
+          </button>
+          <button onClick={() => setCups((c) => Math.min(max, c + 1))} className="w-11 h-11 rounded-2xl flex items-center justify-center active:scale-90 transition" style={{ background: COLOR.blue }}>
+            <Plus size={22} color="#fff" />
+          </button>
+        </div>
+      </div>
+      <div className="flex gap-1.5">
+        {Array.from({ length: max }).map((_, i) => (
+          <div key={i} className="flex-1 h-6 rounded-full" style={{ background: i < cups ? COLOR.blue : `${COLOR.blue}18` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HydrationScreen({ go, colorIdx, setColorIdx, signs, setSigns, cups, setCups }) {
+  const [showSummary, setShowSummary] = useState(false);
+  const toggleSign = (key) => setSigns((s) => ({ ...s, [key]: !s[key] }));
+  const resetAll = () => { setColorIdx(null); setSigns({}); };
+
+  const signCount = Object.values(signs).filter(Boolean).length;
+  const severeUrine = colorIdx === 4;
+  const cautionUrine = colorIdx === 3;
+
+  let level = "none";
+  if (signCount >= 3 || severeUrine) level = "red";
+  else if (signCount === 2 || cautionUrine) level = "yellow";
+  else if (signCount === 1) level = "green";
+
+  const bannerCopy = {
+    green: { bg: COLOR.sage, Icon: Info, title: "1 sign noted", text: "Keep an eye on it and try to finish 3–4 cups of water today." },
+    yellow: { bg: COLOR.gold, Icon: AlertTriangle, title: "A couple of signs noted", text: "You may have mild dehydration or early irritation. Share this with a family member or caregiver." },
+    red: { bg: COLOR.brick, Icon: AlertTriangle, title: "Several signs noted", text: "It's a good idea to call your doctor today. Tap below for a large-print summary to show them." },
+  };
+
+  const selected = colorIdx !== null ? URINE_COLORS[colorIdx] : null;
+  const selectedSignLabels = [
+    ...SYMPTOMS.filter((s) => signs[s.key]).map((s) => s.label),
+    ...BATHROOM_SIGNS.filter((s) => signs[s.key]).map((s) => s.label),
+  ];
+
+  return (
+    <div className="pb-32">
+      <TopBar
+        title="Water & Symptoms"
+        subtitle="Tap what matches how you feel"
+        onBack={() => go("home")}
+        listenText="This is the Water and Symptoms page. First, use the plus and minus buttons to track cups of water. Then tap the circle that matches your urine color today. Below that, tap any cards that match how you feel. If you select several, a colored box will appear telling you what to do next."
+      />
+
+      <div className="px-6 mt-6">
+        <CupTracker cups={cups} setCups={setCups} />
+
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-xl flex-1" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>Urine Color Check</h2>
+          <SpeakerButton text="Urine Color Check. Tap the circle that matches your color today. Pale and bright yellow are good. Dark amber means drink water. Brown or pink need extra attention." />
+        </div>
+        <div className="flex gap-3 justify-between">
+          {URINE_COLORS.map((c, i) => (
+            <button key={i} onClick={() => setColorIdx(colorIdx === i ? null : i)} className="flex flex-col items-center gap-1 flex-1 active:scale-95 transition" aria-label={c.label}>
+              <div className="w-full aspect-square rounded-full" style={{ background: c.hex, border: colorIdx === i ? `4px solid ${COLOR.navy}` : "4px solid transparent", boxShadow: colorIdx === i ? "0 6px 14px rgba(0,0,0,0.25)" : "0 3px 8px rgba(0,0,0,0.12)" }} />
+              <span className="text-lg">{c.emoji}</span>
+              <span className="text-[11px] text-center font-extrabold leading-tight" style={{ ...body, color: COLOR.ink }}>{c.tag}</span>
+            </button>
+          ))}
+        </div>
+
+        {selected && (
+          <div className="mt-4 rounded-3xl p-4 flex items-start gap-2" style={{ background: `${selected.statusColor}18`, border: `2px solid ${selected.statusColor}` }}>
+            <div className="flex-1">
+              <div className="font-extrabold text-lg" style={{ ...body, color: selected.statusColor }}>{selected.emoji} {selected.status}</div>
+              <p className="text-base mt-1" style={{ ...body, fontWeight: 600, color: COLOR.ink }}>{selected.text}</p>
+            </div>
+            <SpeakerButton text={`${selected.status}. ${selected.text}`} />
+          </div>
+        )}
+      </div>
+
+      <div className="px-6 mt-8">
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-xl flex-1" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>How Are You Feeling?</h2>
+          <SpeakerButton text="How are you feeling? Tap any cards that apply: feeling dizzy, sudden confusion, cold or shivering, or unusual fatigue." />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {SYMPTOMS.map((s) => (
+            <SignCard key={s.key} active={!!signs[s.key]} Icon={s.Icon} label={s.label} advice={s.advice} accent={COLOR.navy} onToggle={() => toggleSign(s.key)} />
+          ))}
+        </div>
+      </div>
+
+      <div className="px-6 mt-8">
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-xl flex-1" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>Bathroom Comfort Check</h2>
+          <SpeakerButton text="Bathroom comfort check. Tap any cards that apply: burning feeling, pelvic pressure, sudden urgency, or only a few drops." />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {BATHROOM_SIGNS.map((s) => (
+            <SignCard key={s.key} active={!!signs[s.key]} Icon={s.Icon} label={s.label} advice={s.advice} accent={COLOR.roseDeep} onToggle={() => toggleSign(s.key)} />
+          ))}
+        </div>
+      </div>
+
+      {level !== "none" && (
+        <div className="px-6 mt-8">
+          <div className="rounded-3xl p-5 text-white" style={{ background: bannerCopy[level].bg }}>
+            <div className="flex items-center gap-2 text-xl" style={{ ...body, fontWeight: 800 }}>
+              {React.createElement(bannerCopy[level].Icon, { size: 26, color: "#fff" })}
+              <span className="flex-1">{bannerCopy[level].title}</span>
+              <SpeakerButton text={`${bannerCopy[level].title}. ${bannerCopy[level].text}`} />
+            </div>
+            <p className="text-base mt-2" style={{ ...body, fontWeight: 600 }}>{bannerCopy[level].text}</p>
+            {level === "red" && (
+              <button onClick={() => setShowSummary(true)} className="w-full mt-4 bg-white rounded-2xl py-3 text-lg font-extrabold active:scale-95 transition flex items-center justify-center gap-2" style={{ ...body, color: COLOR.brick }}>
+                <FileText size={22} /> Show Doctor Summary
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="px-6 mt-8">
+        <button onClick={resetAll} className="w-full rounded-2xl py-3 text-base font-extrabold active:scale-95 transition" style={{ ...body, background: "#fff", color: "#8A8072", border: `2px solid #D9D2C6` }}>
+          Reset Selections for Today
+        </button>
+      </div>
+
+      <ReturnHomeButton go={go} />
+
+      {showSummary && (
+        <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="w-full bg-white rounded-t-[2rem] p-6 max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>For Your Doctor</h3>
+              <button onClick={() => setShowSummary(false)} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: COLOR.creamDeep }}>
+                <X size={22} color={COLOR.ink} />
+              </button>
+            </div>
+            <div className="rounded-2xl p-4 mb-3" style={{ background: COLOR.cream }}>
+              <div className="font-extrabold text-lg" style={{ ...body, color: COLOR.navy }}>Urine color</div>
+              <div className="text-lg" style={body}>{selected ? `${selected.label} — ${selected.status}` : "Not checked"}</div>
+            </div>
+            <div className="rounded-2xl p-4" style={{ background: COLOR.cream }}>
+              <div className="font-extrabold text-lg mb-1" style={{ ...body, color: COLOR.navy }}>Signs noticed today</div>
+              {selectedSignLabels.length === 0 ? (
+                <div className="text-lg" style={body}>None selected</div>
+              ) : (
+                <ul className="list-disc pl-5">{selectedSignLabels.map((l) => (<li key={l} className="text-lg" style={body}>{l}</li>))}</ul>
+              )}
+            </div>
+            <p className="text-sm mt-4 text-center" style={{ ...body, color: "#6B6259" }}>This is a general reminder, not a diagnosis. Please share it with your doctor.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  SCAM SHIELD SCREEN                                                  */
+/* ------------------------------------------------------------------ */
+const SCAM_QUESTIONS = [
+  { key: "kit", Icon: Package, label: "Did a stranger offer you a free test kit or medical device?" },
+  { key: "id", Icon: Lock, label: "Did someone you didn't know ask for your Medicare number?" },
+  { key: "pressure", Icon: PhoneCall, label: "Did a caller pressure you to pay right now or with gift cards?" },
+];
+
+const SCAM_TIPS = [
+  { key: "kit", Icon: Package, q: "What does a fake lab test package look like?", a: "It often arrives unrequested, with a flashy label promising a free genetic or pain test. There's usually no doctor's order attached. Real medical tests are ordered by your own doctor, not mailed to you out of the blue." },
+  { key: "gift", Icon: CreditCard, q: "Why Medicare will never ask for payment via gift cards", a: "Medicare and legitimate government agencies never ask you to pay with gift cards, wire transfers, or cryptocurrency. Anyone who asks for that is trying to scam you. Hang up and call to verify." },
+];
+
+function YesNoRow({ q, value, onAnswer }) {
+  return (
+    <div className="rounded-3xl p-4 bg-white shadow-md" style={{ border: `3px solid ${COLOR.navy}22` }}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${COLOR.brick}18` }}>
+          <q.Icon size={28} color={COLOR.brick} strokeWidth={2.2} />
+        </div>
+        <p className="text-lg leading-snug flex-1" style={{ ...body, fontWeight: 800, color: COLOR.ink }}>{q.label}</p>
+        <SpeakerButton text={`${q.label} Tap Yes or No below.`} />
+      </div>
+      <div className="flex gap-3">
+        <button onClick={() => onAnswer("yes")} className="flex-1 py-3 rounded-2xl text-lg font-extrabold flex items-center justify-center gap-2 active:scale-95 transition" style={{ background: value === "yes" ? COLOR.brick : `${COLOR.brick}15`, color: value === "yes" ? "#fff" : COLOR.brick, ...body }}>
+          <AlertTriangle size={20} /> Yes
+        </button>
+        <button onClick={() => onAnswer("no")} className="flex-1 py-3 rounded-2xl text-lg font-extrabold flex items-center justify-center gap-2 active:scale-95 transition" style={{ background: value === "no" ? COLOR.sageDeep : `${COLOR.sageDeep}15`, color: value === "no" ? "#fff" : COLOR.sageDeep, ...body }}>
+          <Check size={20} /> No
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CallSmpButton({ big, style }) {
+  const handleClick = (e) => {
+    // best-effort: some sandboxed preview contexts block custom-protocol
+    // navigation from a plain <a>, so we also try it via script on click.
+    try { window.location.href = `tel:${SMP_TEL}`; } catch (err) { /* ignore */ }
+  };
+  return (
+    <a
+      href={`tel:${SMP_TEL}`}
+      onClick={handleClick}
+      className={`w-full rounded-2xl flex items-center justify-center gap-2 font-extrabold active:scale-95 transition ${big ? "py-4 text-xl" : "py-3 text-base"}`}
+      style={{ ...body, ...style }}
+    >
+      <Phone size={big ? 24 : 18} /> {big ? `Tap to Call SMP: ${SMP_DISPLAY}` : `Save Senior Medicare Patrol: ${SMP_DISPLAY}`}
+    </a>
+  );
+}
+
+function ScamScreen({ go, answers, setAnswers }) {
+  const [openTip, setOpenTip] = useState(null);
+  const allAnswered = SCAM_QUESTIONS.every((q) => answers[q.key]);
+  const anyYes = Object.values(answers).some((v) => v === "yes");
+
+  return (
+    <div className="pb-32">
+      <TopBar
+        title="Scam Checker"
+        subtitle="Answer honestly — it only takes a minute"
+        onBack={() => go("home")}
+        listenText="This is the Scam Checker. Three questions will be read one at a time if you tap the speaker next to each one. Answer Yes or No by tapping the buttons. When all three are answered, you'll see whether it's safe, or whether you should call Senior Medicare Patrol. Two tip cards further down explain common scams."
+      />
+      <div className="px-6 mt-6 flex flex-col gap-4">
+        {SCAM_QUESTIONS.map((q) => (
+          <YesNoRow key={q.key} q={q} value={answers[q.key]} onAnswer={(v) => setAnswers((a) => ({ ...a, [q.key]: v }))} />
+        ))}
+      </div>
+
+      {allAnswered && (
+        <div className="px-6 mt-6">
+          {anyYes ? (
+            <div className="rounded-3xl p-5" style={{ background: COLOR.brick }}>
+              <div className="flex items-center gap-2 text-xl text-white" style={{ ...body, fontWeight: 800 }}>
+                <AlertTriangle size={26} />
+                <span className="flex-1">Possible Warning Sign Found</span>
+                <SpeakerButton text="Possible warning sign found. This matches a common Medicare scam pattern. It's a good idea to call Senior Medicare Patrol. Tap the white button below to call." />
+              </div>
+              <p className="text-white text-base mt-2" style={{ ...body, fontWeight: 600 }}>
+                This matches a common Medicare scam pattern. It's a good idea to call Senior Medicare Patrol — they're used to these calls and are happy to help.
+              </p>
+              <div className="mt-4">
+                <CallSmpButton big style={{ background: "#fff", color: COLOR.brick }} />
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-3xl p-5" style={{ background: `${COLOR.sage}18`, border: `2px solid ${COLOR.sageDeep}` }}>
+              <div className="flex items-center gap-2 text-xl" style={{ ...body, fontWeight: 800, color: COLOR.sageDeep }}>
+                <CheckCircle2 size={26} />
+                <span className="flex-1">So far, so good!</span>
+                <SpeakerButton text="So far, so good! You didn't notice any of these warning signs today. If anything like this happens later, it's always okay to call Senior Medicare Patrol just to check." />
+              </div>
+              <p className="text-base mt-2" style={{ ...body, fontWeight: 600, color: COLOR.ink }}>
+                You didn't notice any of these warning signs today. If anything like this happens later, it's always okay to call and check — that's exactly what this number is for.
+              </p>
+              <div className="mt-4">
+                <CallSmpButton style={{ background: "#fff", color: COLOR.sageDeep, border: `2px solid ${COLOR.sageDeep}` }} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="px-6 mt-8">
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-xl flex-1" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>Common Scams to Watch For</h2>
+        </div>
+        <div className="flex flex-col gap-3">
+          {SCAM_TIPS.map((t) => (
+            <ExpandableTip key={t.key} Icon={t.Icon} question={t.q} answer={t.a} accent={COLOR.brick} open={openTip === t.key} onToggle={() => setOpenTip(openTip === t.key ? null : t.key)} />
+          ))}
+        </div>
+      </div>
+
+      <ReturnHomeButton go={go} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  DOCTOR VISIT PREP SCREEN                                             */
+/* ------------------------------------------------------------------ */
+const MED_SUBITEMS = [
+  { key: "bottles", label: "Prescription Bottles" },
+  { key: "supplements", label: "Supplements / Vitamins" },
+  { key: "drops", label: "Eye Drops / Inhalers" },
+];
+
+function Toggle({ on, onClick }) {
+  return (
+    <button onClick={onClick} aria-pressed={on} className="w-16 h-9 rounded-full relative shrink-0 transition" style={{ background: on ? COLOR.sageDeep : "#D9D2C6" }}>
+      <div className="absolute top-1 w-7 h-7 rounded-full bg-white shadow transition-all" style={{ left: on ? 32 : 4 }} />
+    </button>
+  );
+}
+
+/* Voice-or-type input. Speech recognition needs microphone access,
+   which some embedded/preview browsers block — when that happens we
+   show a clear message instead of a mic button that silently fails. */
+function VoiceOrTextAdd({ placeholder, onAdd }) {
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | listening | unsupported | denied
+  const recogRef = useRef(null);
+
+  const startListening = () => {
+    const SR = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!SR) { setStatus("unsupported"); return; }
+    try {
+      const recog = new SR();
+      recog.lang = "en-US";
+      recog.interimResults = false;
+      recog.onstart = () => setStatus("listening");
+      recog.onresult = (e) => {
+        const said = e.results[0][0].transcript;
+        setText((t) => (t ? `${t} ${said}` : said));
+        setStatus("idle");
+      };
+      recog.onerror = (e) => setStatus(e.error === "not-allowed" || e.error === "service-not-allowed" ? "denied" : "unsupported");
+      recog.onend = () => setStatus((s) => (s === "listening" ? "idle" : s));
+      recogRef.current = recog;
+      recog.start();
+    } catch (e) {
+      setStatus("unsupported");
+    }
+  };
+
+  const submit = () => { if (text.trim()) { onAdd(text.trim()); setText(""); } };
+
+  return (
+    <div className="mt-2">
+      <div className="flex gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+          placeholder={placeholder}
+          className="flex-1 rounded-xl px-3 py-3 text-base"
+          style={{ ...body, border: `2px solid ${COLOR.navy}33` }}
+        />
+        <button onClick={startListening} aria-label="Speak instead of typing" className="w-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: status === "listening" ? COLOR.brick : `${COLOR.navy}14` }}>
+          <Mic size={20} color={status === "listening" ? "#fff" : COLOR.navy} />
+        </button>
+        <button onClick={submit} className="w-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: COLOR.navy }}>
+          <Plus size={20} color="#fff" />
+        </button>
+      </div>
+      {status === "listening" && (
+        <p className="text-sm mt-1 font-bold" style={{ ...body, color: COLOR.brickDeep }}>🎙️ Listening — speak now…</p>
+      )}
+      {(status === "unsupported" || status === "denied") && (
+        <p className="text-sm mt-1 font-bold" style={{ ...body, color: "#8A8072" }}>
+          Voice input isn't available in this preview window — please type it in above instead.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DoctorScreen({ go, doctor, setDoctor, hydration, scamAnswers }) {
+  const [printStatus, setPrintStatus] = useState(null);
+  const [shareStatus, setShareStatus] = useState(null);
+  const [showCard, setShowCard] = useState(false);
+
+  const setOn = (key, val) => setDoctor((d) => ({ ...d, [key]: val }));
+  const toggleMedItem = (key) => setDoctor((d) => ({ ...d, medItems: { ...d.medItems, [key]: !d.medItems[key] } }));
+  const addMed = (text) => setDoctor((d) => ({ ...d, customMeds: [...d.customMeds, text] }));
+  const addQuestion = (text) => setDoctor((d) => ({ ...d, customQuestions: [...d.customQuestions, text] }));
+
+  const readyCount = ["medsOn", "labsOn", "questionsOn"].filter((k) => doctor[k]).length;
+  const readyColor = readyCount === 0 ? "#B7AE9E" : readyCount < 3 ? COLOR.gold : COLOR.sageDeep;
+  const readyLabel = readyCount === 0 ? "Not Ready Yet – Check items above" : readyCount < 3 ? "Almost Ready" : "Fully Prepared for Your Appointment!";
+
+  const activeSymptoms = [
+    ...SYMPTOMS.filter((s) => hydration.signs[s.key]).map((s) => s.label),
+    ...BATHROOM_SIGNS.filter((s) => hydration.signs[s.key]).map((s) => s.label),
+  ];
+  const urineNote = hydration.colorIdx !== null ? `${URINE_COLORS[hydration.colorIdx].label} — ${URINE_COLORS[hydration.colorIdx].status}` : null;
+  const flaggedScam = SCAM_QUESTIONS.filter((q) => scamAnswers[q.key] === "yes").map((q) => q.label);
+  const dateStr = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const medsList = [...MED_SUBITEMS.filter((m) => doctor.medItems[m.key]).map((m) => m.label), ...doctor.customMeds];
+
+  const summaryText = [
+    `Doctor Visit Summary — ${dateStr}`,
+    "",
+    "Symptoms logged today:",
+    ...([urineNote, ...activeSymptoms].filter(Boolean).length ? [urineNote, ...activeSymptoms].filter(Boolean).map((s) => `- ${s}`) : ["- None logged"]),
+    "",
+    "Items to discuss:",
+    doctor.medsOn ? `- Medications: ${medsList.join(", ") || "list to bring"}` : null,
+    doctor.labsOn ? "- Bring recent lab results / Medicare statements" : null,
+    doctor.questionsOn ? `- Questions: ${doctor.customQuestions.join("; ") || "see notes"}` : null,
+    "",
+    "Billing / fraud questions to raise:",
+    ...(flaggedScam.length ? flaggedScam.map((s) => `- ${s}`) : ["- None flagged"]),
+  ].filter((l) => l !== null).join("\n");
+
+  const printHtml = `
+    <h1>Doctor Visit Worksheet</h1>
+    <p class="sub">${dateStr} &nbsp;•&nbsp; Geri-Check</p>
+    <h2>Symptoms noted</h2>
+    <p>${[urineNote, ...activeSymptoms].filter(Boolean).join(", ") || "—"}</p>
+    <h2>Medications to bring up</h2>
+    <p>${medsList.join(", ") || "—"}</p>
+    <h2>Questions to ask</h2>
+    <p>${doctor.customQuestions.join(", ") || "—"}</p>
+    <h2>Extra notes — write below</h2>
+    ${[1,2,3,4,5,6].map(() => '<div class="line"></div>').join("")}
+  `;
+
+  const handlePrint = () => {
+    setPrintStatus(null);
+    openPrintable("Doctor Visit Worksheet", printHtml, () => setPrintStatus("blocked"));
+  };
+
+  const handleCopy = async () => {
+    const ok = await copyText(summaryText);
+    setShareStatus(ok ? "copied" : "failed");
+    setTimeout(() => setShareStatus(null), 4000);
+  };
+
+  return (
+    <div className="pb-32">
+      <TopBar
+        title="Doctor Prep"
+        subtitle="Get ready before you go"
+        onBack={() => go("home")}
+        listenText="This is Doctor Prep. Turn on each switch for what you want to bring or discuss at your appointment. Turning one on shows more choices. Near the bottom, you can view a large summary card, print a worksheet, or copy the summary to send to family."
+      />
+
+      <div className="px-6 mt-6 flex flex-col gap-4">
+        {/* Medications */}
+        <div className="rounded-3xl bg-white shadow-md overflow-hidden" style={{ border: `3px solid ${doctor.medsOn ? COLOR.sageDeep : COLOR.navy + "22"}` }}>
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: doctor.medsOn ? `${COLOR.sageDeep}20` : `${COLOR.navy}12` }}>
+              <Pill size={28} color={doctor.medsOn ? COLOR.sageDeep : COLOR.navy} strokeWidth={2.2} />
+            </div>
+            <span className="text-lg flex-1" style={{ ...body, fontWeight: 800, color: COLOR.ink }}>Bring Medication List</span>
+            <SpeakerButton text="Bring medication list. Turn this switch on to check off prescription bottles, supplements, or eye drops and inhalers, and to add any others by typing or speaking." />
+            <Toggle on={doctor.medsOn} onClick={() => setOn("medsOn", !doctor.medsOn)} />
+          </div>
+          {doctor.medsOn && (
+            <div className="px-4 pb-4">
+              <div className="flex flex-col gap-2 mb-2">
+                {MED_SUBITEMS.map((m) => (
+                  <button key={m.key} onClick={() => toggleMedItem(m.key)} className="flex items-center gap-3 text-left">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: doctor.medItems[m.key] ? COLOR.sageDeep : "#fff", border: `2px solid ${COLOR.sageDeep}` }}>
+                      {doctor.medItems[m.key] && <Check size={16} color="#fff" />}
+                    </div>
+                    <span className="text-base" style={{ ...body, fontWeight: 700, color: COLOR.ink }}>{m.label}</span>
+                  </button>
+                ))}
+                {doctor.customMeds.map((m, i) => (
+                  <div key={i} className="text-base pl-10" style={{ ...body, color: COLOR.sageDeep, fontWeight: 700 }}>• {m}</div>
+                ))}
+              </div>
+              <VoiceOrTextAdd placeholder="Add a medication name" onAdd={addMed} />
+            </div>
+          )}
+        </div>
+
+        {/* Labs */}
+        <div className="rounded-3xl bg-white shadow-md overflow-hidden" style={{ border: `3px solid ${doctor.labsOn ? COLOR.sageDeep : COLOR.navy + "22"}` }}>
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: doctor.labsOn ? `${COLOR.sageDeep}20` : `${COLOR.navy}12` }}>
+              <FileText size={28} color={doctor.labsOn ? COLOR.sageDeep : COLOR.navy} strokeWidth={2.2} />
+            </div>
+            <span className="text-lg flex-1" style={{ ...body, fontWeight: 800, color: COLOR.ink }}>Bring Lab & Medicare Statements</span>
+            <SpeakerButton text="Bring lab and Medicare statements. Turn this switch on for a reminder to bring recent lab results or any suspicious bills you flagged in the Scam Checker." />
+            <Toggle on={doctor.labsOn} onClick={() => setOn("labsOn", !doctor.labsOn)} />
+          </div>
+          {doctor.labsOn && (
+            <div className="px-4 pb-4">
+              <div className="rounded-2xl p-3 flex items-start gap-2" style={{ background: `${COLOR.blue}12` }}>
+                <Info size={20} color={COLOR.blueDeep} className="mt-0.5 shrink-0" />
+                <p className="text-sm" style={{ ...body, fontWeight: 600, color: COLOR.ink }}>
+                  Bring recent lab results or any suspicious bills you checked in the Scam Shield screen so your doctor can verify them.
+                  {flaggedScam.length > 0 && ` (${flaggedScam.length} flagged item${flaggedScam.length > 1 ? "s" : ""} from Scam Shield.)`}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Questions */}
+        <div className="rounded-3xl bg-white shadow-md overflow-hidden" style={{ border: `3px solid ${doctor.questionsOn ? COLOR.sageDeep : COLOR.navy + "22"}` }}>
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: doctor.questionsOn ? `${COLOR.sageDeep}20` : `${COLOR.navy}12` }}>
+              <HelpCircle size={28} color={doctor.questionsOn ? COLOR.sageDeep : COLOR.navy} strokeWidth={2.2} />
+            </div>
+            <span className="text-lg flex-1" style={{ ...body, fontWeight: 800, color: COLOR.ink }}>Ask About Symptoms</span>
+            <SpeakerButton text="Ask about symptoms. Turn this switch on to see symptoms you already logged on the Water page, and to add your own questions by typing or speaking." />
+            <Toggle on={doctor.questionsOn} onClick={() => setOn("questionsOn", !doctor.questionsOn)} />
+          </div>
+          {doctor.questionsOn && (
+            <div className="px-4 pb-4">
+              {(urineNote || activeSymptoms.length > 0) && (
+                <p className="text-sm mb-2" style={{ ...body, fontWeight: 700, color: COLOR.sageDeep }}>
+                  Selected earlier: {[urineNote, ...activeSymptoms].filter(Boolean).join(", ")}
+                </p>
+              )}
+              {doctor.customQuestions.map((q, i) => (
+                <div key={i} className="text-base" style={{ ...body, color: COLOR.ink, fontWeight: 700 }}>• {q}</div>
+              ))}
+              <VoiceOrTextAdd placeholder="Add a question for your doctor" onAdd={addQuestion} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="px-6 mt-8">
+        <div className="rounded-3xl p-5 bg-white shadow-md flex items-center gap-5" style={{ border: `3px solid ${readyColor}` }}>
+          <ReadinessRing fraction={readyCount / 3} color={readyColor} />
+          <div className="flex-1">
+            <div className="text-lg" style={{ ...display, fontWeight: 700, color: COLOR.ink }}>My Visit Readiness</div>
+            <div className="text-base mt-1" style={{ ...body, fontWeight: 700, color: readyColor }}>{readyLabel}</div>
+          </div>
+          <SpeakerButton text={`My visit readiness. ${readyLabel}`} />
+        </div>
+
+        <button onClick={() => setShowCard(true)} className="w-full mt-4 rounded-3xl py-5 text-xl font-extrabold flex items-center justify-center gap-3 active:scale-95 transition shadow-lg" style={{ background: COLOR.navy, color: "#fff", ...body }}>
+          📱 View Doctor Summary Card
+        </button>
+
+        <div className="flex gap-3 mt-4">
+          <button onClick={handlePrint} className="flex-1 rounded-3xl py-4 text-base font-extrabold flex items-center justify-center gap-2 active:scale-95 transition shadow-lg" style={{ background: COLOR.blue, color: "#fff", ...body }}>
+            <Printer size={22} /> Print Sheet
+          </button>
+          <button onClick={handleCopy} className="flex-1 rounded-3xl py-4 text-base font-extrabold flex items-center justify-center gap-2 active:scale-95 transition shadow-lg" style={{ background: COLOR.roseDeep, color: "#fff", ...body }}>
+            <Copy size={20} /> Copy Summary
+          </button>
+        </div>
+        {printStatus === "blocked" && (
+          <p className="text-sm mt-2 text-center font-bold" style={{ ...body, color: COLOR.brickDeep }}>
+            Your browser blocked the print window pop-up. Please allow pop-ups for this page and tap Print Sheet again.
+          </p>
+        )}
+        {shareStatus === "copied" && (
+          <p className="text-sm mt-2 text-center font-bold" style={{ ...body, color: COLOR.sageDeep }}>
+            Copied! Paste it into a text or email to send to family.
+          </p>
+        )}
+        {shareStatus === "failed" && (
+          <p className="text-sm mt-2 text-center font-bold" style={{ ...body, color: COLOR.brickDeep }}>
+            Couldn't copy automatically — please select and copy the text from the summary card instead.
+          </p>
+        )}
+
+        <div className="flex gap-3 mt-3">
+          <a href={`mailto:?subject=${encodeURIComponent("Doctor Visit Summary")}&body=${encodeURIComponent(summaryText)}`} className="flex-1 rounded-2xl py-3 text-sm font-extrabold flex items-center justify-center gap-2 active:scale-95 transition" style={{ ...body, background: "#fff", color: COLOR.navy, border: `2px solid ${COLOR.navy}33` }}>
+            <Send size={16} /> Open Email
+          </a>
+          <a href={`sms:?&body=${encodeURIComponent(summaryText)}`} className="flex-1 rounded-2xl py-3 text-sm font-extrabold flex items-center justify-center gap-2 active:scale-95 transition" style={{ ...body, background: "#fff", color: COLOR.navy, border: `2px solid ${COLOR.navy}33` }}>
+            <Send size={16} /> Open Messages
+          </a>
+        </div>
+        <p className="text-xs text-center mt-2" style={{ ...body, color: "#8A8072" }}>
+          If Email or Messages doesn't open here, use Copy Summary above instead.
+        </p>
+      </div>
+
+      <ReturnHomeButton go={go} />
+
+      {showCard && (
+        <div className="fixed inset-0 z-50 bg-white overflow-y-auto p-6">
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => setShowCard(false)} className="flex items-center gap-2 text-lg font-extrabold" style={{ color: COLOR.navy }}>
+              <ArrowLeft size={22} /> Close
+            </button>
+            <SpeakerButton text={`Doctor summary for ${dateStr}. Symptoms logged: ${[urineNote, ...activeSymptoms].filter(Boolean).join(", ") || "none"}. Items to discuss: ${[doctor.medsOn && "medications", doctor.labsOn && "labs", doctor.questionsOn && "questions"].filter(Boolean).join(", ") || "nothing selected yet"}. Fraud or billing questions: ${flaggedScam.join(", ") || "none flagged"}.`} big />
+          </div>
+          <h2 className="text-3xl mb-1" style={{ ...display, fontWeight: 800, color: "#000" }}>Doctor Summary</h2>
+          <p className="text-xl mb-6" style={{ ...body, color: "#000", fontWeight: 700 }}>{dateStr}</p>
+
+          <p className="text-2xl font-extrabold mb-2" style={{ ...body, color: "#000" }}>Symptoms Logged Today</p>
+          {[urineNote, ...activeSymptoms].filter(Boolean).length === 0 ? (
+            <p className="text-2xl mb-6" style={{ ...body, color: "#000" }}>None logged</p>
+          ) : (
+            <ul className="mb-6 pl-6 list-disc">{[urineNote, ...activeSymptoms].filter(Boolean).map((s) => (<li key={s} className="text-2xl mb-1" style={{ ...body, color: "#000" }}>{s}</li>))}</ul>
+          )}
+
+          <p className="text-2xl font-extrabold mb-2" style={{ ...body, color: "#000" }}>Items to Discuss</p>
+          <ul className="mb-6 pl-6 list-disc">
+            {doctor.medsOn && <li className="text-2xl mb-1" style={{ ...body, color: "#000" }}>Medications: {medsList.join(", ") || "bring list"}</li>}
+            {doctor.labsOn && <li className="text-2xl mb-1" style={{ ...body, color: "#000" }}>Lab results / Medicare statements</li>}
+            {doctor.questionsOn && <li className="text-2xl mb-1" style={{ ...body, color: "#000" }}>Questions: {doctor.customQuestions.join("; ") || "see notes"}</li>}
+            {!doctor.medsOn && !doctor.labsOn && !doctor.questionsOn && <li className="text-2xl mb-1" style={{ ...body, color: "#000" }}>Nothing selected yet</li>}
+          </ul>
+
+          <p className="text-2xl font-extrabold mb-2" style={{ ...body, color: "#000" }}>Fraud / Billing Questions</p>
+          {flaggedScam.length === 0 ? (
+            <p className="text-2xl" style={{ ...body, color: "#000" }}>None flagged</p>
+          ) : (
+            <ul className="pl-6 list-disc">{flaggedScam.map((s) => (<li key={s} className="text-2xl mb-1" style={{ ...body, color: "#000" }}>{s}</li>))}</ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  ROOT APP                                                             */
+/* ------------------------------------------------------------------ */
+function GeriCheckApp() {
+  const [screen, setScreen] = useState("home");
+  const [contacts, setContacts] = useState({});
+
+  const [colorIdx, setColorIdx] = useState(null);
+  const [signs, setSigns] = useState({});
+  const [cups, setCups] = useState(0);
+
+  const [scamAnswers, setScamAnswers] = useState({});
+
+  const [doctor, setDoctor] = useState({
+    medsOn: false, labsOn: false, questionsOn: false,
+    medItems: {}, customMeds: [], customQuestions: [],
+  });
+
+  const screens = {
+    home: <HomeScreen go={setScreen} contacts={contacts} setContacts={setContacts} />,
+    hydration: <HydrationScreen go={setScreen} colorIdx={colorIdx} setColorIdx={setColorIdx} signs={signs} setSigns={setSigns} cups={cups} setCups={setCups} />,
+    scam: <ScamScreen go={setScreen} answers={scamAnswers} setAnswers={setScamAnswers} />,
+    doctor: <DoctorScreen go={setScreen} doctor={doctor} setDoctor={setDoctor} hydration={{ colorIdx, signs }} scamAnswers={scamAnswers} />,
+  };
+
+  return (
+    <div className="w-full min-h-screen flex justify-center" style={{ background: "#DED5C4" }}>
+      <style>{FONT_IMPORT}</style>
+      <div className="w-full max-w-md min-h-screen relative" style={{ background: COLOR.cream, ...body }}>
+        {screens[screen]}
+        <BottomNav screen={screen} go={setScreen} />
+      </div>
+    </div>
+  );
+}
+
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<GeriCheckApp />);
+</script>
+</body>
+</html>
